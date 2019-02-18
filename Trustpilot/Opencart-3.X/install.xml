@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+    <name>Trustpilot review module</name>
+    <code>Trustpilot 2.5.458</code>
+    <version>2.5.458</version>
+    <author>Trustpilot</author>
+    <link>http://Trustpilot.com</link>
+    <file path="catalog/controller/checkout/success.php">
+        <operation info="Trustpilot - Include Trustpilot Orders">
+            <search >
+            <![CDATA[<?php]]>
+            </search>
+            <add position="after"><![CDATA[
+                include_once DIR_APPLICATION . 'controller/extension/trustpilot/orders.php';
+            ]]></add>
+        </operation>
+
+        <operation info="Trustpilot - get order information">
+            <search >
+            <![CDATA[public function index() {]]>
+            </search>
+            <add position="after"><![CDATA[
+                $tpOrders = new TrustpilotOrders($this, $this->registry);
+                $data['Trustpilot_orderData'] = json_encode($tpOrders->getOrder(), JSON_HEX_APOS);
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/controller/common/header.php">
+        <operation info="Trustpilot - Render invitejs">
+            <search >
+            <![CDATA[<?php]]>
+            </search>
+            <add position="after"><![CDATA[
+                include_once DIR_SYSTEM . 'library/trustpilot/config.php';
+                include_once DIR_SYSTEM . 'library/trustpilot/helper.php';
+            ]]></add>
+        </operation>
+
+        <operation info="Trustpilot - Render invitejs">
+            <search >
+            <![CDATA[public function index() {]]>
+            </search>
+            <add position="after"><![CDATA[
+                $helper = TrustpilotHelper::getInstance($this->registry);
+                $settings = $helper->getTrustpilotField(TRUSTPILOT_MASTER_FIELD);
+                $data['Trustpilot_app_key'] = isset($settings->general->key) ? $settings->general->key : '';
+                $data['Trustpilot_script_url'] = TRUSTPILOT_SCRIPT_URL;
+                $data['Trustpilot_widget_script_url'] = TRUSTPILOT_WIDGET_SCRIPT_URL;
+                $data['Trustpilot_trustbox_settings'] = $helper->loadTrustboxes(isset($settings->trustbox) ? $settings->trustbox : '', $this->request);
+                $data['Trustpilot_integration_app_url'] = TRUSTPILOT_INTEGRATION_APP_URL;
+                $data['Trustpilot_preview_css_url'] = TRUSTPILOT_PREVIEW_CSS_URL;
+                $data['Trustpilot_preview_script_url'] = TRUSTPILOT_PREVIEW_SCRIPT_URL;
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/controller/startup/permission.php">
+        <operation info="Trustpilot - Add permissions">
+            <search >
+                <![CDATA[$extension = array(]]>
+            </search>
+            <add position="after"><![CDATA[
+              'extension/trustpilot',]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/common/header.tpl">
+        <operation info="Trustpilot - Render invitejs">
+            <search >
+            <![CDATA[</head>]]>
+            </search>
+            <add position="before"><![CDATA[
+                <script>
+                    let trustpilot_script_url = '<?php echo $Trustpilot_script_url ?>';
+                    let trustpilot_key = '<?php echo $Trustpilot_app_key ?>';
+                    let trustpilot_widget_script_url = '<?php echo $Trustpilot_widget_script_url ?>';
+                    let trustpilot_trustbox_settings = <?php echo $Trustpilot_trustbox_settings ?>;
+                    let trustpilot_integration_app_url = '<?php echo $Trustpilot_integration_app_url ?>';
+                    let trustpilot_preview_css_url = '<?php echo $Trustpilot_preview_css_url ?>';
+                    let trustpilot_preview_script_url = '<?php echo $Trustpilot_preview_script_url ?>';
+                </script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/register.js"></script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/trustbox.js"></script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/preview.js"></script>
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/common/header.twig">
+        <operation info="Trustpilot - Render invitejs">
+            <search >
+                <![CDATA[</head>]]>
+            </search>
+            <add position="before"><![CDATA[
+                <script>
+                    let trustpilot_script_url = '{{ Trustpilot_script_url }}';
+                    let trustpilot_key = '{{ Trustpilot_app_key }}';
+                    let trustpilot_widget_script_url = '{{ Trustpilot_widget_script_url }}';
+                    let trustpilot_trustbox_settings = {{ Trustpilot_trustbox_settings }};
+                    let trustpilot_integration_app_url = '{{ Trustpilot_integration_app_url }}';
+                    let trustpilot_preview_css_url = '{{ Trustpilot_preview_css_url }}';
+                    let trustpilot_preview_script_url = '{{ Trustpilot_preview_script_url }}';
+                </script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/register.js"></script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/trustbox.js"></script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/preview.js"></script>
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="admin/view/template/common/header.*">
+ 		<operation>
+ 			<search><![CDATA[</head>]]>
+ 			</search>
+ 			<add position="before"><![CDATA[<link rel="stylesheet" type="text/css" href="/admin/view/javascript/trustpilot/css/menu.css" />]]>
+ 			</add>
+ 		</operation>
+ 	</file>
+
+    <file path="catalog/view/theme/*/template/common/success.tpl">
+        <operation>
+            <search><![CDATA[
+            <?php echo $footer; ?>
+            ]]></search>
+            <add position="before"><![CDATA[
+                <script type="text/javascript">
+                    let trustpilot_invitation = <?php echo $Trustpilot_orderData ?>;
+                </script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/invite.js"></script>
+            ]]></add>
+        </operation>
+    </file>
+
+    <file path="catalog/view/theme/*/template/common/success.twig">
+        <operation>
+            <search><![CDATA[
+            {{ footer }}
+            ]]></search>
+            <add position="before"><![CDATA[
+                <script type="text/javascript">
+                    let trustpilot_invitation = {{ Trustpilot_orderData }};
+                </script>
+                <script type="text/javascript" src="/catalog/view/javascript/trustpilot/invite.js"></script>
+            ]]></add>
+        </operation>
+    </file>
+</modification>

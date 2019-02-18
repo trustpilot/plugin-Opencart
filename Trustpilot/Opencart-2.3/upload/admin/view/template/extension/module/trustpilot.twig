@@ -1,0 +1,62 @@
+{{ header }}
+
+<script>const TRUSTPILOT_INTEGRATION_APP_URL = "{{ TRUSTPILOT_INTEGRATION_APP_URL }}"; </script>
+
+{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <ul class="breadcrumb">
+                {% for breadcrumb in breadcrumbs %}
+                    <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="container-fluid">
+        {% if error_warning %}
+            <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        {% endif %}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <fieldset id="trustpilot_signup">
+                    <iframe
+                        src='{{ TRUSTPILOT_INTEGRATION_APP_URL }}'
+                        id='configuration_iframe'
+                        frameborder='0'
+                        scrolling='no'
+                        width='100%'
+                        height='1400px'
+                        data-source='OpenCart'
+                        data-settings='{{ settings }}'
+                        data-transfer='{{ TRUSTPILOT_INTEGRATION_APP_URL }}'
+                        data-past-orders='{{ past_orders_info }}'
+                        data-plugin-version='{{ plugin_version }}'
+                        data-version='OpenCart-{{ version }}'
+                        data-page-urls='{{ page_urls }}'
+                        data-product-identification-options='{{ product_identification_options }}'
+                        data-is-from-marketplace = '{{ is_from_marketplace }}'
+                        onload='sendSettings(); sendPastOrdersInfo();'>
+                    </iframe>
+                    <div id='trustpilot-trustbox-preview'
+                        hidden='true'
+                        data-page-urls='{{ page_urls }}'
+                        data-custom-trustboxes='{{ custom_trustboxes }}'
+                        data-settings='{{ settings }}'
+                        data-src='{{ starting_url }}'
+                        data-source='OpenCart'
+                        data-sku='{{ sku }}'
+                        data-name='{{ name }}'
+                    >
+                    </div>
+                </fieldset>
+                <script src='{{ trustbox_preview_url }}' id='TrustBoxPreviewComponent'></script>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}
