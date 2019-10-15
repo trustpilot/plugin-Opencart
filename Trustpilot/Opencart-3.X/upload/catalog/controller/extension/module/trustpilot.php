@@ -12,6 +12,14 @@ class ControllerExtensionModuleTrustpilot extends Controller {
     }
 
     /**
+     * A wrapper function for 2.1 support
+     */
+    public function legacyOrderStatusChange21($order_id) {
+        $data = array($order_id);
+        $this->orderStatusChange(null, $data);
+    }
+
+    /**
      * A wrapper function for 2.2 support
      */
     public function legacyOrderStatusChange($route, $output, $order_id, $order_status_id) {
@@ -29,12 +37,11 @@ class ControllerExtensionModuleTrustpilot extends Controller {
             $key = $settings->general->key;
             try {
                 $order_id = $data[0];
-                $order_status_id = $data[1];
-
                 $this->load->model('checkout/order');
                 $this->load->model($this->helper->versionSafePath('extension/module/trustpilot/invitation'));
 
                 $order = $this->model_checkout_order->getOrder($order_id);
+                $order_status_id = array_key_exists(1, $data) ? $data[1] : $order['order_status_id'];
                 $common = array(
                     'hook' => 'opencart_order_status_changed'
                 );
@@ -49,15 +56,13 @@ class ControllerExtensionModuleTrustpilot extends Controller {
                         $response = $trustpilot_api->postInvitation($key, $invitation);
                     }
 
-                    $this->handleSingleResponse($response, $invitation);
+                    $this->handleSingleResponse($response, $invitation, $key);
                 } else {
                     $invitation['payloadType'] = 'OrderStatusUpdate';
                     $response = $trustpilot_api->postInvitation($key, $invitation);
                 }
             } catch (Exception $e) {
-                $error = array('message' => $e->getMessage());
-                $data = array('error' => $error);
-                $trustpilot_api->postInvitation($key, $data);
+                $this->helper->log('Unable to send backend invitation. Reson: ' . $e->getMessage(), $key);
             }
         }
     }
@@ -65,7 +70,7 @@ class ControllerExtensionModuleTrustpilot extends Controller {
     /**
 	 * Updating post orders lists after automatic invitation
 	 */
-    private function handleSingleResponse($response, $order) {
+    private function handleSingleResponse($response, $order, $key) {
         try {
             $synced_orders = (int) $this->helper->getTrustpilotField(TRUSTPILOT_PAST_ORDERS_FIELD, false);
             $failed_orders = $this->helper->getTrustpilotField(TRUSTPILOT_FAILED_ORDERS_FIELD);
@@ -81,8 +86,7 @@ class ControllerExtensionModuleTrustpilot extends Controller {
                 $this->helper->setTrustpilotField(TRUSTPILOT_FAILED_ORDERS_FIELD, json_encode($failed_orders));
             }
         } catch (Exception $e) {
-            $message = 'Unable to update past orders for order id: Error: ' . $e->getMessage();
-            $this->log->write($message);
+            $this->helper->log('Unable to update past orders for order id: Error: ' . $e->getMessage(), $key);
         }
     }
 

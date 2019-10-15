@@ -8,6 +8,11 @@ function receiveSettings(e) {
         return;
     }
     const data = e.data;
+
+    if (typeof data !== 'string') {
+        return;
+    }
+
     if (data.startsWith('sync:') || data.startsWith('showPastOrdersInitial:')) {
         const split = data.split(':');
         const action = {};
@@ -24,37 +29,44 @@ function receiveSettings(e) {
         action['action'] = 'handle_past_orders';
         action['issynced'] = 'issynced';
         this.submitPastOrdersCommand(action);
-    } else if (data && JSON.parse(data).TrustBoxPreviewMode) {
-        TrustBoxPreviewMode(data);
+    } else if (data.startsWith('check_product_skus')) {
+        const split = data.split(':');
+        const action = {};
+        action['action'] = 'check_product_skus';
+        action['skuSelector'] = split[1];
+        this.submitCheckProductSkusCommand(action);
     } else {
-        handleJSONMessage(data);
+        this.handleJSONMessage(data);
     }
 }
 
 function receiveInternalData(e) {
     const data = e.data;
-    if (data && typeof data === 'string') {
-        const jsonData = JSON.parse(data);
-        if (jsonData && jsonData.type === 'updatePageUrls' || jsonData.type === 'newTrustBox') {
-            submitSettings(jsonData);
+    const parsedData = {};
+    if (data && typeof data === 'string' && tryParseJson(data, parsedData)) {
+        if (parsedData.type === 'updatePageUrls' || parsedData.type === 'newTrustBox') {
+            this.submitSettings(parsedData);
         }
     }
 }
 
 function handleJSONMessage(data) {
-    const parsedData = JSON.parse(data);
-    if (parsedData.window) {
-        this.updateIframeSize(parsedData);
-    } else if (parsedData.type === 'submit') {
-        this.submitSettings(parsedData);
-    } else if (parsedData.trustbox) {
-        const iframe = document.getElementById('trustbox_preview_frame');
-        iframe.contentWindow.postMessage(JSON.stringify(parsedData.trustbox), "*");
+    const parsedData = {};
+    if (tryParseJson(data, parsedData)) {
+        if (parsedData.TrustBoxPreviewMode) {
+            this.trustBoxPreviewMode(parsedData);
+        } else if (parsedData.window) {
+            this.updateIframeSize(parsedData);
+        } else if (parsedData.type === 'submit') {
+            this.submitSettings(parsedData);
+        } else if (parsedData.trustbox) {
+            const iframe = document.getElementById('trustbox_preview_frame');
+            iframe.contentWindow.postMessage(JSON.stringify(parsedData.trustbox), "*");
+        }
     }
 }
 
-function TrustBoxPreviewMode(data) {
-    const settings = JSON.parse(data);
+function trustBoxPreviewMode(settings) {
     const div = document.getElementById('trustpilot-trustbox-preview');
     if (settings.TrustBoxPreviewMode.enable) {
         div.hidden = false;
@@ -106,8 +118,25 @@ function submitPastOrdersCommand(data) {
     xhr.send(encodeSettings(data));
 }
 
+function submitCheckProductSkusCommand(data) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/index.php?route=extension/trustpilot/ajax${getTokenKeyValue()}`);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (xhr.status >= 400) {
+                console.log(`callback error: ${xhr.response} ${xhr.status}`);
+            } else {
+                const iframe = document.getElementById('configuration_iframe');
+                iframe.contentWindow.postMessage(xhr.response, iframe.dataset.transfer);
+            }
+        }
+    };
+    xhr.send(encodeSettings(data));
+}
+
 function submitSettings(parsedData) {
-    let data = { action: 'handle_save_changes' }
+    let data = { action: 'handle_save_changes' };
     if (parsedData.type === 'updatePageUrls') {
         data.pageUrls = encodeURIComponent(JSON.stringify(parsedData.pageUrls));
     } else if (parsedData.type === 'newTrustBox') {
@@ -145,7 +174,9 @@ function sendSettings() {
     settings.version = attrs.version;
     settings.basis = 'plugin';
     settings.productIdentificationOptions = JSON.parse(attrs.productIdentificationOptions);
+    settings.configurationScopeTree = JSON.parse(atob(attrs.configurationScopeTree));
     settings.isFromMarketplace = JSON.parse(attrs.isFromMarketplace);
+    settings.pluginStatus = JSON.parse(atob(attrs.pluginStatus));
 
     if (settings.trustbox.trustboxes && attrs.sku) {
         for (trustbox of settings.trustbox.trustboxes) {
@@ -171,4 +202,13 @@ function sendPastOrdersInfo(data) {
     }
 
     iframe.contentWindow.postMessage(data, attrs.transfer);
+}
+
+function tryParseJson(str, out) {
+    try {
+        out = Object.assign(out, JSON.parse(str));
+    } catch (e) {
+        return false;
+    }
+    return true;
 }

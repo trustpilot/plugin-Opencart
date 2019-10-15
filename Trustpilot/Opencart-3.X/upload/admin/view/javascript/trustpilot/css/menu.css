@@ -4,3 +4,7 @@
     background-image: url('../images/logo.svg') !important;
     color: transparent !important;
 }
+
+#content {
+    outline: none !important;
+}

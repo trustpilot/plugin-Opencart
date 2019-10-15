@@ -1,9 +1,11 @@
 <?php
 
 require_once(DIR_SYSTEM . 'library/trustpilot/config.php');
+require_once(DIR_SYSTEM . 'library/trustpilot/trustpilot_http_client.php');
 
 class TrustpilotHelper {
-    private $registry = null;
+    private $registry, $log, $trustpilot_api = null;
+    
     protected static $instance = null;
 
     public static function getInstance($registry) {
@@ -15,6 +17,11 @@ class TrustpilotHelper {
 
     public function __construct($registry) {
         $this->registry = $registry;
+        $this->log = new Log('error.log');
+    }
+
+    public function isV21() {
+        return version_compare(VERSION, '2.2', '<');
     }
 
     public function isV22() {
@@ -107,7 +114,7 @@ class TrustpilotHelper {
     public function getAvailableTrustboxesByPage($settings, $page, $request) {
         $data = array();
         foreach ($settings->trustboxes as $trustbox) {
-            if (rtrim($trustbox->page, '/') == $page && $trustbox->enabled == 'enabled') {
+            if ((rtrim($trustbox->page, '/') == $page || $this->checkCustomPage($trustbox->page, $page)) && $trustbox->enabled == 'enabled') {
                 if (isset($request->get['route']) && $request->get['route'] == 'product/product') {
                     $this->registry->get('load')->model('catalog/product');
                     $product = $this->registry->get('model_catalog_product')->getProduct($request->get['product_id']);
@@ -125,6 +132,14 @@ class TrustpilotHelper {
             }
         }
         return $data;
+    }
+
+    private function checkCustomPage($tbPage, $page) {
+        return (
+            $tbPage == strtolower(base64_encode($page . '/')) ||
+            $tbPage == strtolower(base64_encode($page)) ||
+            $tbPage == strtolower(base64_encode(rtrim($page, '/')))
+        );
     }
     
     public function link($route, $base, $args = '') {
@@ -145,5 +160,51 @@ class TrustpilotHelper {
         } else {
             return HTTP_SERVER;
         }
+    }
+
+    public function getConfigurationScopeTree() {
+        $this->registry->get('load')->model('setting/store');
+        $this->registry->get('load')->model('localisation/language');
+        $configurationScopeTree = array();
+
+        $stores = $this->registry->get('model_setting_store')->getStores();
+        array_unshift($stores, array(
+            'store_id' => '0',
+            'name' => $this->registry->get('config')->get('config_name'),
+            'url' => HTTP_CATALOG,
+        ));
+
+        $languages = $this->registry->get('model_localisation_language')->getLanguages();
+        foreach ($stores as $store) {
+            foreach ($languages as $language) {
+                if ($language['status'] == 1) {
+                    array_push($configurationScopeTree, array(
+                        'ids' => array($store['store_id'], $language['language_id']),
+                        'names' => array(
+                            'store' => $store['name'],
+                            'view' => $language['name'],
+                        ),
+                        'domain' => parse_url($store['url'], PHP_URL_HOST),
+                    ));
+                }
+            }
+        }
+
+        return $configurationScopeTree;
+    }
+
+    public function log($message, $key = '') {
+        try {
+            $this->log->write($message);
+
+            $trustpilot_api = new TrustpilotHttpClient(TRUSTPILOT_API_URL, $this->registry, $this->getBaseUrl());
+            $data = array(
+                'platform' => 'OpenCart-' . VERSION,
+                'version'  => TRUSTPILOT_PLUGIN_VERSION,
+                'key'      => $key,
+                'message'  => $message,
+            );
+            $trustpilot_api->postLog($data);
+        } catch (Exception $e) { /* empty on purpose */ }
     }
 }

@@ -4,7 +4,7 @@
 
 <?php echo $column_left; ?>
 
-<div id="content">
+<div id="content" tabindex="0">
     <div class="page-header">
         <div class="container-fluid">
             <div class="pull-right" style='display: none'>
@@ -30,6 +30,19 @@
                     </form>
 
                     <fieldset id="trustpilot_signup">
+                        <script type='text/javascript'>
+                            function onTrustpilotIframeLoad() {
+                                if (typeof sendSettings === 'function' && typeof sendPastOrdersInfo === 'function') {
+                                    sendSettings();
+                                    sendPastOrdersInfo();
+                                } else {
+                                    window.addEventListener('load', function () {
+                                        sendSettings();
+                                        sendPastOrdersInfo();
+                                    });
+                                }
+                            }
+                        </script>
                         <iframe
                             src='<?php echo $TRUSTPILOT_INTEGRATION_APP_URL; ?>'
                             id='configuration_iframe'
@@ -45,8 +58,10 @@
                             data-version='OpenCart-<?php echo $version; ?>'
                             data-page-urls='<?php echo $page_urls; ?>'
                             data-product-identification-options='<?php echo $product_identification_options; ?>'
-                            data-is-from-marketplace = '<?php echo $is_from_marketplace; ?>'
-                            onload='sendSettings(); sendPastOrdersInfo();'>
+                            data-configuration-scope-tree='<?php echo $configuration_scope_tree; ?>'
+                            data-plugin-status='<?php echo $plugin_status; ?>'
+                            data-is-from-marketplace='<?php echo $is_from_marketplace; ?>'
+                            onload='onTrustpilotIframeLoad();'>
                         </iframe>
                         <div id='trustpilot-trustbox-preview'
                             hidden='true'

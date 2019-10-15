@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <modification>
     <name>Trustpilot review module</name>
-    <code>Trustpilot 2.5.458</code>
-    <version>2.5.458</version>
+    <code>Trustpilot 2.5.547</code>
+    <version>2.5.547</version>
     <author>Trustpilot</author>
     <link>http://Trustpilot.com</link>
     <file path="catalog/controller/checkout/success.php">
@@ -72,13 +72,13 @@
             </search>
             <add position="before"><![CDATA[
                 <script>
-                    let trustpilot_script_url = '<?php echo $Trustpilot_script_url ?>';
-                    let trustpilot_key = '<?php echo $Trustpilot_app_key ?>';
-                    let trustpilot_widget_script_url = '<?php echo $Trustpilot_widget_script_url ?>';
-                    let trustpilot_trustbox_settings = <?php echo $Trustpilot_trustbox_settings ?>;
-                    let trustpilot_integration_app_url = '<?php echo $Trustpilot_integration_app_url ?>';
-                    let trustpilot_preview_css_url = '<?php echo $Trustpilot_preview_css_url ?>';
-                    let trustpilot_preview_script_url = '<?php echo $Trustpilot_preview_script_url ?>';
+                    var trustpilot_script_url = '<?php echo $Trustpilot_script_url ?>';
+                    var trustpilot_key = '<?php echo $Trustpilot_app_key ?>';
+                    var trustpilot_widget_script_url = '<?php echo $Trustpilot_widget_script_url ?>';
+                    var trustpilot_trustbox_settings = <?php echo $Trustpilot_trustbox_settings ?>;
+                    var trustpilot_integration_app_url = '<?php echo $Trustpilot_integration_app_url ?>';
+                    var trustpilot_preview_css_url = '<?php echo $Trustpilot_preview_css_url ?>';
+                    var trustpilot_preview_script_url = '<?php echo $Trustpilot_preview_script_url ?>';
                 </script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/register.js"></script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/trustbox.js"></script>
@@ -94,13 +94,13 @@
             </search>
             <add position="before"><![CDATA[
                 <script>
-                    let trustpilot_script_url = '{{ Trustpilot_script_url }}';
-                    let trustpilot_key = '{{ Trustpilot_app_key }}';
-                    let trustpilot_widget_script_url = '{{ Trustpilot_widget_script_url }}';
-                    let trustpilot_trustbox_settings = {{ Trustpilot_trustbox_settings }};
-                    let trustpilot_integration_app_url = '{{ Trustpilot_integration_app_url }}';
-                    let trustpilot_preview_css_url = '{{ Trustpilot_preview_css_url }}';
-                    let trustpilot_preview_script_url = '{{ Trustpilot_preview_script_url }}';
+                    var trustpilot_script_url = '{{ Trustpilot_script_url }}';
+                    var trustpilot_key = '{{ Trustpilot_app_key }}';
+                    var trustpilot_widget_script_url = '{{ Trustpilot_widget_script_url }}';
+                    var trustpilot_trustbox_settings = {{ Trustpilot_trustbox_settings }};
+                    var trustpilot_integration_app_url = '{{ Trustpilot_integration_app_url }}';
+                    var trustpilot_preview_css_url = '{{ Trustpilot_preview_css_url }}';
+                    var trustpilot_preview_script_url = '{{ Trustpilot_preview_script_url }}';
                 </script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/register.js"></script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/trustbox.js"></script>
@@ -125,7 +125,7 @@
             ]]></search>
             <add position="before"><![CDATA[
                 <script type="text/javascript">
-                    let trustpilot_invitation = <?php echo $Trustpilot_orderData ?>;
+                    var trustpilot_invitation = <?php echo isset($Trustpilot_orderData) ? $Trustpilot_orderData : "''" ?>;
                 </script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/invite.js"></script>
             ]]></add>
@@ -139,7 +139,7 @@
             ]]></search>
             <add position="before"><![CDATA[
                 <script type="text/javascript">
-                    let trustpilot_invitation = {{ Trustpilot_orderData }};
+                    var trustpilot_invitation = {{ Trustpilot_orderData|default("''") }};
                 </script>
                 <script type="text/javascript" src="/catalog/view/javascript/trustpilot/invite.js"></script>
             ]]></add>

@@ -73,6 +73,8 @@
             $data['starting_url'] = $this->config->get('config_secure') ? HTTPS_CATALOG : HTTP_CATALOG;
             $data['trustbox_preview_url'] = TRUSTPILOT_TRUSTBOX_PREVIEW_URL;
             $data['custom_trustboxes'] = $this->config->get(TRUSTPILOT_CUSTOM_TRUSTBOXES_FIELD);
+            $data['configuration_scope_tree'] = base64_encode(json_encode($this->helper->getConfigurationScopeTree()));
+            $data['plugin_status'] = base64_encode(json_encode($this->helper->getTrustpilotField(TRUSTPILOT_PLUGIN_STATUS_FIELD)));
 
             $this->response->setOutput($this->load->view($this->helper->versionSafeViewPath('extension/module/trustpilot'), $data));
         }
@@ -118,7 +120,13 @@
 
         public function install() {
             $event_model = $this->getEventModel();
-            if ($this->helper->isV22()) {
+            if ($this->helper->isV21()) {
+                $event_model->addEvent(
+                    'tp_orderStatusChange',
+                    'post.order.history.add',
+                    $this->helper->versionSafePath('extension/module/trustpilot/legacyOrderStatusChange21')
+                );
+            } else if ($this->helper->isV22()) {
                 $event_model->addEvent(
                     'tp_orderStatusChange',
                     'catalog/model/checkout/order/addOrderHistory/after',
@@ -155,20 +163,19 @@
                 TRUSTPILOT_SYNC_IN_PROGRESS => 'false',
                 TRUSTPILOT_SHOW_PAST_ORDERS_INITIAL => 'true',
                 TRUSTPILOT_PAST_ORDERS_FIELD => '0',
-                TRUSTPILOT_FAILED_ORDERS_FIELD => '[]',
-                TRUSTPILOT_CUSTOM_TRUSTBOXES_FIELD => '[]'
+                TRUSTPILOT_FAILED_ORDERS_FIELD => '{}',
+                TRUSTPILOT_CUSTOM_TRUSTBOXES_FIELD => '{}',
+                TRUSTPILOT_PLUGIN_STATUS_FIELD => json_encode(array(
+                    'pluginStatus' => 200,
+                    'blockedDomains' => array(),
+                )),
             );
             $this->load->model('setting/setting');
             $this->model_setting_setting->editSetting('trustpilot', $settings);
 
             $this->load->model('user/user_group');
-            $this->model_user_user_group->addPermission($this->user->getId(), 'access', $this->helper->versionSafePath('extension/trustpilot/ajax'));
-            $this->model_user_user_group->addPermission($this->user->getId(), 'modify', $this->helper->versionSafePath('extension/trustpilot/ajax'));
             $this->model_user_user_group->addPermission($this->user->getId(), 'access', $this->helper->versionSafePath('extension/module/trustpilot'));
             $this->model_user_user_group->addPermission($this->user->getId(), 'modify', $this->helper->versionSafePath('extension/module/trustpilot'));
-
-            // Cache controller
-            $this->load->controller($this->helper->versionSafePath('extension/trustpilot/ajax'));
         }
 
         public function uninstall() {
@@ -208,7 +215,7 @@
         function getProducts($limit = null) {
             $this->load->model('catalog/product');
             $filter_data = array(
-                'status'       => 1,
+                'filter_status' => '1',
             );
             if ($limit) {
                 $filter_data['start'] = 0;
